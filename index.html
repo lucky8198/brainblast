@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<!-- saved from url=(0037)http://127.0.0.1:5500/brainblast.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brain Blast — Full Suite (Quiz, Game, Typing, Memory, Leaderboard)</title>
+<link href="./Brain Blast — Full Suite (Quiz, Game, Typing, Memory, Leaderboard)_files/css2" rel="stylesheet">
+<style>
+:root{
+  --bg1:#6d28d9; --bg2:#06b6d4; --accent:#facc15; --card:rgba(255,255,255,0.06);
+  --text:#fff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:"Baloo 2", Arial, sans-serif;background:linear-gradient(120deg,var(--bg1),#ec4899,var(--bg2));background-size:400% 400%;animation:grad 12s linear infinite;color:var(--text)}
+@keyframes grad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.wrap{max-width:1150px;margin:20px auto;padding:14px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.title{display:flex;gap:10px;align-items:center}
+.logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,0.9),rgba(255,255,255,0.5));display:flex;align-items:center;justify-content:center;color:#111;font-weight:900}
+h1{margin:0;font-size:20px}
+nav{display:flex;gap:8px}
+.tab{padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);cursor:pointer;font-weight:700;color:var(--text)}
+.tab.active{outline:2px solid rgba(0,0,0,0.12);box-shadow:0 6px 20px rgba(0,0,0,0.25);border:2px solid var(--accent)}
+.container{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px}
+.panel{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.22)}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.scorebox{background:linear-gradient(90deg,#fff3,#fff1);color:#111;padding:8px 12px;border-radius:999px;font-weight:800}
+.badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{background:rgba(255,255,255,0.12);padding:6px 8px;border-radius:8px;font-weight:700}
+
+/* QUIZ */
+.question-card{background:rgba(255,255,255,0.04);padding:16px;border-radius:10px;text-align:center}
+.question-text{font-size:20px;font-weight:800;margin-bottom:8px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.option{background:rgba(255,255,255,0.08);padding:12px;border-radius:10px;cursor:pointer;transition:transform .12s}
+.option:hover{transform:translateY(-4px)}
+.option.correct{background:linear-gradient(90deg,#16a34a,#4ade80);color:#022}
+.option.wrong{background:linear-gradient(90deg,#dc2626,#fb7185);color:#100}
+.hint{display:none;margin-top:10px;padding:8px;border-radius:8px;color:var(--text)}
+.controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px}
+
+/* GAME */
+#gameCanvas{width:100%;height:300px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.03))}
+
+/* TYPING */
+.typing-area{display:flex;flex-direction:column;gap:10px;align-items:center}
+.word-box{background:rgba(255,255,255,0.04);padding:18px;border-radius:12px;font-size:20px;font-weight:800}
+.typing-input{padding:10px;border-radius:8px;border:none;width:100%;max-width:420px}
+
+/* MEMORY */
+.memory-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:rgba(255,255,255,0.03);height:80px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;cursor:pointer;user-select:none}
+.card.flipped{background:linear-gradient(90deg,#fff7,#fff3);color:#111}
+
+/* LEADERBOARD */
+.leaderboard{background:rgba(255,255,255,0.03);padding:10px;border-radius:10px}
+.leaderboard ol{margin:8px 0 0 18px}
+
+/* footer controls */
+.controls-right{display:flex;gap:8px;align-items:center}
+
+/* responsive */
+@media(max-width:980px){.container{grid-template-columns:1fr} #gameCanvas{height:220px} .memory-board{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <div class="logo">BB</div>
+      <div>
+        <h1>Brain Blast — Full Suite</h1>
+        <div style="font-size:13px;color:rgba(255,255,255,0.9)">Quiz • Catch-the-Star • Typing Challenge • Memory Flip • Leaderboard • Sounds</div>
+      </div>
+    </div>
+
+    <nav>
+      <div id="tabQuiz" class="tab active">Quiz</div>
+      <div id="tabGame" class="tab">Game</div>
+      <div id="tabTyping" class="tab">Typing</div>
+      <div id="tabMemory" class="tab">Memory</div>
+      <div id="tabExtras" class="tab">Extras</div>
+    </nav>
+  </header>
+
+  <div class="container">
+    <!-- MAIN PANEL -->
+    <div class="panel" id="mainPanel">
+      <div class="topbar">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="scorebox">Total Score: <span id="totalScore">0</span></div>
+          <div id="levelNotice" style="color:var(--text)">Level 1</div>
+        </div>
+        <div class="controls-right">
+          <div class="badges" id="topBadges"></div>
+          <label style="display:flex;gap:6px;align-items:center">
+            <input id="soundToggle" type="checkbox" checked=""> Sound
+          </label>
+        </div>
+      </div>
+
+      <!-- QUIZ PANEL -->
+      <div id="quizPanel">
+        <div class="question-card">
+          <div class="question-text" id="qText">Water boils at (sea level):</div>
+          <div class="options" id="optionsGrid"><div class="option">90°C</div><div class="option">100°C</div><div class="option">120°C</div></div>
+          <div class="hint" id="hintBox" style="display: none;"></div>
+        </div>
+        <div class="controls">
+          <div style="display:flex;gap:8px">
+            <button id="nextQ" class="btn secondary" fdprocessedid="pnpm0l">Next</button>
+            <button id="showHint" class="btn" fdprocessedid="o7dar">Show Hint</button>
+            <button id="resetQuiz" class="btn secondary" fdprocessedid="fw5qb">Reset</button>
+          </div>
+          <div style="color:var(--text)">Left: <span id="leftCount">9</span> • Streak: <span id="streak">0</span></div>
+        </div>
+      </div>
+
+      <!-- GAME PANEL (hidden by default) -->
+      <div id="gamePanel" style="display:none">
+        <canvas id="gameCanvas" width="0" height="0"></canvas>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <button id="startGame" class="btn">Start</button>
+          <button id="stopGame" class="btn secondary">Stop</button>
+          <div style="color:var(--text)">Game Score: <span id="gameScore">0</span></div>
+        </div>
+      </div>
+
+      <!-- TYPING PANEL -->
+      <div id="typingPanel" style="display:none">
+        <div class="typing-area">
+          <div class="word-box" id="typingWord">ready</div>
+          <input id="typingInput" class="typing-input" placeholder="Type the word and press Enter">
+          <div style="display:flex;gap:8px">
+            <button id="startTyping" class="btn">Start Typing Challenge</button>
+            <button id="stopTyping" class="btn secondary">Stop</button>
+            <div style="color:var(--text)">Typed Score: <span id="typingScore">0</span></div>
+            <div style="color:var(--text)">Time Left: <span id="typingTime">0</span>s</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEMORY PANEL -->
+      <div id="memoryPanel" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+          <button id="startMemory" class="btn">Start Memory</button>
+          <button id="resetMemory" class="btn secondary">Reset</button>
+          <div style="color:var(--text)">Matches: <span id="matches">0</span></div>
+          <div style="color:var(--text)">Attempts: <span id="attempts">0</span></div>
+        </div>
+        <div class="memory-board" id="memoryBoard"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: Extras / Leaderboard -->
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong>Extras</strong>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="themeSelect" style="padding:6px;border-radius:6px" fdprocessedid="1bp7qb">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <strong>Science Facts</strong>
+        <div id="factText" style="margin-top:8px;color:var(--text)">Octopuses have three hearts and blue blood.</div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <strong>Leaderboard (local)</strong>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="saveScore" class="btn small" fdprocessedid="378tjs">Save Score</button>
+          <button id="clearBoard" class="btn secondary small" fdprocessedid="di8irp">Clear</button>
+        </div>
+        <div class="leaderboard" style="margin-top:8px">
+          <ol id="leaderList"></ol>
+        </div>
+        <div style="margin-top:8px;color:var(--text)">Top local: <span id="topLocal">0</span></div>
+      </div>
+
+      <div>
+        <strong>Badges</strong>
+        <div id="badgesList" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Sound engine (WebAudio)
+   ========================= */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let soundOn = true;
+document.getElementById('soundToggle').addEventListener('change', (e)=> soundOn = !!e.target.checked);
+
+function ensureAudio(){
+  if(!audioCtx) audioCtx = new AudioCtx();
+}
+function playBeep(freq=440, duration=120, type='sine', gain=0.12){
+  if(!soundOn) return;
+  ensureAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.value = gain;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start();
+  setTimeout(()=>{ o.stop(); }, duration);
+}
+function playCorrect(){ playBeep(880,120,'sine',0.14); playBeep(1320,60,'sine',0.08); }
+function playWrong(){ playBeep(220,200,'sawtooth',0.16); }
+
+/* =========================
+   Shared data
+   ========================= */
+const QUESTIONS = [
+  {q:"What does HTML stand for?", options:["HyperText Markup Language","Home Tool Markup","Hyperlinks and Text Mark"], ans:"HyperText Markup Language", hint:"Used to structure web pages."},
+  {q:"CSS is used to:", options:["Style web pages","Store data","Create backend logic"], ans:"Style web pages", hint:"Controls appearance (colors, layout)."},
+  {q:"JS 'console.log()' is used to:", options:["Show messages in console","Send email","Make network requests"], ans:"Show messages in console", hint:"Useful for debugging."},
+  {q:"Water boils at (sea level):", options:["100°C","90°C","120°C"], ans:"100°C", hint:"Standard boiling point."},
+  {q:"Pythagoras' theorem:", options:["a²+b²=c²","a+b=c","a²-b²=c²"], ans:"a²+b²=c²", hint:"Applies to right triangles."},
+  {q:"Atomic symbol for Oxygen:", options:["O","Ox","Og"], ans:"O", hint:"One-letter atomic symbol."},
+  {q:"Speed of light approx:", options:["3×10^8 m/s","1×10^6 m/s","9.8 m/s²"], ans:"3×10^8 m/s", hint:"Important physical constant."},
+  {q:"Which tag for image in HTML?", options:["<img>","<image>","<pic>"], ans:"<img>", hint:"Use src attribute for source."},
+  {q:"Which CSS centers text?", options:["text-align","align-text","center-text"], ans:"text-align", hint:"text-align:center;"},
+  {q:"Which is a programming language?", options:["Python","HTML","CSS"], ans:"Python", hint:"General-purpose programming language."}
+];
+
+const FACTS = [
+  "Honey never spoils — edible honey found in ancient tombs.",
+  "The Eiffel Tower expands ~15 cm on hot days.",
+  "A lightning bolt could toast 100,000 slices of bread (energy-wise).",
+  "Humans and bananas share about 60% DNA similarity.",
+  "Octopuses have three hearts and blue blood."
+];
+
+/* =========================
+   App state
+   ========================= */
+let totalScore = 0;
+let topLocal = Number(localStorage.getItem('bb_top')||0);
+let asked = [];
+let current = null;
+let streak = 0;
+let leftQuestions = QUESTIONS.length;
+
+/* DOM refs */
+const totalScoreEl = document.getElementById('totalScore');
+const levelNotice = document.getElementById('levelNotice');
+const topBadges = document.getElementById('topBadges');
+const qText = document.getElementById('qText');
+const optionsGrid = document.getElementById('optionsGrid');
+const hintBox = document.getElementById('hintBox');
+const nextQBtn = document.getElementById('nextQ');
+const showHintBtn = document.getElementById('showHint');
+const resetQuizBtn = document.getElementById('resetQuiz');
+const leftCountEl = document.getElementById('leftCount');
+const streakEl = document.getElementById('streak');
+const tabQuiz = document.getElementById('tabQuiz');
+const tabGame = document.getElementById('tabGame');
+const tabTyping = document.getElementById('tabTyping');
+const tabMemory = document.getElementById('tabMemory');
+const tabExtras = document.getElementById('tabExtras');
+const quizPanel = document.getElementById('quizPanel');
+const gamePanel = document.getElementById('gamePanel');
+const typingPanel = document.getElementById('typingPanel');
+const memoryPanel = document.getElementById('memoryPanel');
+const extrasPanel = document.getElementById('tabExtras'); // not used visually
+const startGameBtn = document.getElementById('startGame');
+const stopGameBtn = document.getElementById('stopGame');
+const gameScoreEl = document.getElementById('gameScore');
+const factText = document.getElementById('factText');
+const themeSelect = document.getElementById('themeSelect');
+const leaderList = document.getElementById('leaderList');
+const saveScoreBtn = document.getElementById('saveScore');
+const clearBoardBtn = document.getElementById('clearBoard');
+const topLocalEl = document.getElementById('topLocal');
+const startTypingBtn = document.getElementById('startTyping');
+const stopTypingBtn = document.getElementById('stopTyping');
+const typingWordEl = document.getElementById('typingWord');
+const typingInput = document.getElementById('typingInput');
+const typingScoreEl = document.getElementById('typingScore');
+const typingTimeEl = document.getElementById('typingTime');
+const memoryBoard = document.getElementById('memoryBoard');
+const startMemoryBtn = document.getElementById('startMemory');
+const resetMemoryBtn = document.getElementById('resetMemory');
+const matchesEl = document.getElementById('matches');
+const attemptsEl = document.getElementById('attempts');
+const badgesList = document.getElementById('badgesList');
+
+/* ========== Utility functions ========== */
+function updateTotalScore(v){
+  totalScore += v;
+  if(totalScore < 0) totalScore = 0;
+  totalScoreEl.textContent = totalScore;
+  const lvl = Math.floor(totalScore / 50) + 1;
+  levelNotice.textContent = `Level ${lvl}`;
+  if(totalScore > topLocal){
+    topLocal = totalScore;
+    localStorage.setItem('bb_top', String(topLocal));
+    topLocalEl.textContent = topLocal;
+  }
+  checkScoreBadges();
+}
+function checkScoreBadges(){
+  const milestones = [30,60,120];
+  milestones.forEach(m=>{
+    if(totalScore >= m && !document.getElementById('scbadge'+m)){
+      const b = document.createElement('div'); b.className='badge'; b.id='scbadge'+m; b.textContent = 'Milestone ' + m;
+      topBadges.appendChild(b); badgesList.appendChild(b.cloneNode(true));
+    }
+  });
+}
+
+/* ========== QUIZ: non-repeating selection ========== */
+function getRandomQuestion(){
+  if(asked.length === QUESTIONS.length) asked = [];
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * QUESTIONS.length);
+  } while (asked.includes(idx) || (current && QUESTIONS[idx].q === current.q));
+  asked.push(idx);
+  leftQuestions = QUESTIONS.length - asked.length;
+  leftCountEl.textContent = leftQuestions;
+  return QUESTIONS[idx];
+}
+function loadQuestion(){
+  hintBox.style.display = 'none'; hintBox.textContent = '';
+  optionsGrid.innerHTML = '';
+  current = getRandomQuestion();
+  qText.textContent = current.q;
+  const opts = [...current.options].sort(()=>Math.random()-0.5);
+  opts.forEach(opt=>{
+    const d = document.createElement('div'); d.className='option'; d.textContent = opt;
+    d.addEventListener('click', ()=> quizAnswer(opt,d));
+    optionsGrid.appendChild(d);
+  });
+}
+function quizAnswer(choice, el){
+  Array.from(optionsGrid.children).forEach(b=>b.style.pointerEvents='none');
+  if(choice === current.ans){
+    el.classList.add('correct'); hintBox.style.display='block'; hintBox.style.background='rgba(34,197,94,0.12)'; hintBox.style.color='#e7ffef';
+    hintBox.textContent = `Correct — ${current.hint}`; streak++; streakEl.textContent = streak;
+    updateTotalScore(10 + Math.min(streak,5));
+    playCorrect();
+    if(streak===3) awardBadge('3-Combo'); if(streak===5) awardBadge('5-Combo');
+  } else {
+    el.classList.add('wrong'); hintBox.style.display='block'; hintBox.style.background='rgba(239,68,68,0.12)'; hintBox.style.color='#ffecec';
+    hintBox.textContent = `Wrong — correct: ${current.ans} — ${current.hint}`; streak=0; streakEl.textContent = 0;
+    updateTotalScore(-5);
+    playWrong();
+  }
+}
+nextQBtn.addEventListener('click', ()=>{ loadQuestion(); });
+showHintBtn.addEventListener('click', ()=>{ hintBox.style.display='block'; hintBox.style.background='rgba(255,255,255,0.06)'; hintBox.style.color=varOr('#fff'); hintBox.textContent = 'Hint: ' + (current?.hint || 'no hint'); });
+resetQuizBtn.addEventListener('click', ()=>{ asked=[]; streak=0; streakEl.textContent=0; loadQuestion(); });
+
+/* helper for color fallback */
+function varOr(fallback){ return window.getComputedStyle(document.documentElement).getPropertyValue('--text') || fallback; }
+
+/* initial quiz */
+leftCountEl.textContent = QUESTIONS.length; streakEl.textContent = 0; totalScoreEl.textContent = totalScore; topLocalEl.textContent = topLocal;
+setTimeout(()=>{ if(!current) loadQuestion(); }, 60);
+
+/* ========== TABS ========== */
+function clearActive(){ [tabQuiz,tabGame,tabTyping,tabMemory,tabExtras].forEach(t=>t.classList.remove('active')); }
+tabQuiz.addEventListener('click', ()=>{ clearActive(); tabQuiz.classList.add('active'); quizPanel.style.display=''; gamePanel.style.display='none'; typingPanel.style.display='none'; memoryPanel.style.display='none'; });
+tabGame.addEventListener('click', ()=>{ clearActive(); tabGame.classList.add('active'); quizPanel.style.display='none'; gamePanel.style.display=''; typingPanel.style.display='none'; memoryPanel.style.display='none'; resizeCanvas(); });
+tabTyping.addEventListener('click', ()=>{ clearActive(); tabTyping.classList.add('active'); quizPanel.style.display='none'; gamePanel.style.display='none'; typingPanel.style.display=''; memoryPanel.style.display='none'; });
+tabMemory.addEventListener('click', ()=>{ clearActive(); tabMemory.classList.add('active'); quizPanel.style.display='none'; gamePanel.style.display='none'; typingPanel.style.display='none'; memoryPanel.style.display=''; });
+tabExtras.addEventListener('click', ()=>{ clearActive(); tabExtras.classList.add('active'); quizPanel.style.display='none'; gamePanel.style.display='none'; typingPanel.style.display='none'; memoryPanel.style.display='none'; });
+
+/* ========== Facts carousel ========== */
+let factIdx = 0;
+function showFact(){ factText.textContent = FACTS[factIdx]; factIdx = (factIdx+1)%FACTS.length; }
+setInterval(showFact,4200); showFact();
+
+/* ========== Leaderboard ========== */
+function loadLeaderboard(){
+  const raw = localStorage.getItem('bb_leaderboard');
+  const list = raw ? JSON.parse(raw) : [];
+  list.sort((a,b)=>b.score - a.score);
+  leaderList.innerHTML = '';
+  list.slice(0,10).forEach(e=>{
+    const li = document.createElement('li'); li.textContent = `${e.name} — ${e.score} (${e.date})`;
+    leaderList.appendChild(li);
+  });
+}
+function saveScoreToLocal(){
+  const name = prompt("Enter name (max 20 chars):", "Player");
+  if(!name) return;
+  const raw = localStorage.getItem('bb_leaderboard'); const list = raw ? JSON.parse(raw) : [];
+  const entry = { name: name.slice(0,20), score: totalScore, date: (new Date()).toLocaleString() };
+  list.push(entry); localStorage.setItem('bb_leaderboard', JSON.stringify(list));
+  if(totalScore > topLocal){ topLocal = totalScore; localStorage.setItem('bb_top', String(topLocal)); topLocalEl.textContent = topLocal; }
+  loadLeaderboard(); alert("Saved!");
+}
+function clearLeaderboard(){ if(confirm("Clear local leaderboard?")){ localStorage.removeItem('bb_leaderboard'); loadLeaderboard(); } }
+document.getElementById('saveScore').addEventListener('click', saveScoreToLocal);
+document.getElementById('clearBoard').addEventListener('click', clearLeaderboard);
+loadLeaderboard();
+
+/* ========== THEME SWITCH ========== */
+themeSelect.addEventListener('change', (e)=>{ const v = e.target.value; if(v==='light') document.body.style.background = 'linear-gradient(120deg,#ffd6e0,#ffe29f,#fef3c7)'; else document.body.style.background = 'linear-gradient(120deg,var(--bg1),#ec4899,var(--bg2))'; });
+
+/* ========== GAME: Canvas catch the star ========== */
+const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
+let cw, ch;
+function resizeCanvas(){ cw = canvas.width = canvas.clientWidth; ch = canvas.height = canvas.clientHeight; }
+window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+let gameRunning=false, gameObjects=[], playerX=cw/2, playerW=80, playerH=16, gameScore=0, lastSpawn=0, gameSpeed=1, keys={left:false,right:false}, rafId=null;
+document.addEventListener('keydown',(e)=>{ if(e.key==='ArrowLeft') keys.left=true; if(e.key==='ArrowRight') keys.right=true; });
+document.addEventListener('keyup',(e)=>{ if(e.key==='ArrowLeft') keys.left=false; if(e.key==='ArrowRight') keys.right=false; });
+canvas.addEventListener('mousemove',(e)=>{ const r=canvas.getBoundingClientRect(); playerX = e.clientX - r.left; });
+canvas.addEventListener('touchmove',(e)=>{ const r=canvas.getBoundingClientRect(); if(e.touches[0]) playerX = e.touches[0].clientX - r.left; });
+
+function spawnStar(){ const x=Math.random()*(cw-30)+15, size=12+Math.random()*16, speed=1.2+Math.random()*1.6+gameSpeed*0.12; gameObjects.push({x,y:-20,size,speed,type:'star'}); if(Math.random()<0.08) gameObjects.push({x:Math.random()*(cw-30)+15,y:-40,size:18,speed:1.6+Math.random()*1.8,type:'bad'}); }
+function drawPlayer(){ ctx.fillStyle='rgba(255,255,255,0.95)'; const px=Math.max(0,Math.min(cw-playerW, playerX-playerW/2)); ctx.fillRect(px, ch-playerH-6, playerW, playerH); }
+function drawStar(o){ ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.arc(o.x,o.y,o.size/2,0,Math.PI*2); ctx.fill(); }
+function drawBad(o){ ctx.fillStyle='#ef4444'; ctx.fillRect(o.x-o.size/2,o.y-o.size/2,o.size,o.size); }
+
+function updateGame(){
+  if(!gameRunning) return;
+  const now = performance.now();
+  if(now - lastSpawn > 700/(1+gameSpeed*0.08)){ spawnStar(); lastSpawn = now; }
+  ctx.clearRect(0,0,cw,ch);
+  if(keys.left) playerX -= 6 + gameSpeed; if(keys.right) playerX += 6 + gameSpeed;
+  playerX = Math.max(playerW/2, Math.min(cw - playerW/2, playerX));
+  for(let i=gameObjects.length-1;i>=0;i--){
+    const o = gameObjects[i]; o.y += o.speed;
+    if(o.type==='star') drawStar(o); else drawBad(o);
+    const px = playerX - playerW/2, py = ch - playerH - 6;
+    const collided = (o.x > px && o.x < px + playerW && o.y + o.size/2 > py);
+    if(collided){
+      if(o.type==='star'){ gameScore++; updateTotalScore(5); tinyConfetti(o.x,o.y); playCorrect(); }
+      else { gameScore = Math.max(0, gameScore-2); updateTotalScore(-8); playWrong(); }
+      gameObjects.splice(i,1); continue;
+    }
+    if(o.y - o.size > ch + 50) gameObjects.splice(i,1);
+  }
+  drawPlayer();
+  ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.font='13px Arial'; ctx.fillText('Game Score: ' + gameScore, 10, 18);
+  gameScoreEl.textContent = gameScore;
+  gameSpeed += 0.0008;
+  rafId = requestAnimationFrame(updateGame);
+}
+function tinyConfetti(x,y){
+  for(let i=0;i<8;i++){
+    const el = document.createElement('div'); el.style.position='absolute';
+    el.style.left = (canvas.getBoundingClientRect().left + x + (Math.random()*30-15)) + 'px';
+    el.style.top = (canvas.getBoundingClientRect().top + y + (Math.random()*20-10)) + 'px';
+    el.style.width='8px'; el.style.height='8px'; el.style.borderRadius='3px';
+    el.style.background = `hsl(${Math.random()*360},90%,55%)`; el.style.pointerEvents='none'; el.style.zIndex=9999;
+    document.body.appendChild(el);
+    const dur = 700 + Math.random()*700;
+    el.animate([{transform:'translateY(0)',opacity:1},{transform:`translateY(${120+Math.random()*50}px)`,opacity:0}], {duration:dur, easing:'cubic-bezier(.2,.8,.2,1)'});
+    setTimeout(()=>el.remove(), dur+20);
+  }
+}
+startGameBtn.addEventListener('click', ()=>{ if(gameRunning) return; gameRunning=true; gameObjects=[]; gameScore=0; lastSpawn = performance.now(); gameSpeed=1; rafId = requestAnimationFrame(updateGame); });
+stopGameBtn.addEventListener('click', ()=>{ gameRunning=false; if(rafId) cancelAnimationFrame(rafId); });
+
+/* ========== TYPING CHALLENGE ========== */
+const WORDS = ["apple","orbit","matrix","python","planet","random","gravity","binary","vector","function","compile","array","memory","logic","energy"];
+let typingRunning=false, typingScore=0, typingTimer=0, typingInterval=null;
+function startTyping(){
+  typingRunning=true; typingScore=0; typingTimer=30; typingScoreEl.textContent=typingScore; typingTimeEl.textContent=typingTimer;
+  nextTypingWord();
+  typingInput.focus();
+  typingInterval = setInterval(()=>{
+    typingTimer--; typingTimeEl.textContent = typingTimer;
+    if(typingTimer<=0) stopTyping();
+  },1000);
+}
+function stopTyping(){
+  typingRunning=false; clearInterval(typingInterval); typingInput.value=''; typingWordEl.textContent='—';
+  // give total score bonus
+  updateTotalScore(typingScore);
+}
+function nextTypingWord(){
+  const w = WORDS[Math.floor(Math.random()*WORDS.length)];
+  typingWordEl.textContent = w;
+  typingInput.value=''; typingInput.focus();
+}
+startTypingBtn.addEventListener('click', ()=>{ startTyping(); playBeep(660,100,'sine',0.08); });
+stopTypingBtn.addEventListener('click', ()=>{ stopTyping(); });
+typingInput.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && typingRunning){
+    const word = typingWordEl.textContent.trim();
+    if(typingInput.value.trim() === word){ typingScore += Math.max(3, Math.round(5 + typingWordEl.textContent.length/2)); playCorrect(); }
+    else { typingScore = Math.max(0, typingScore - 1); playWrong(); }
+    typingScoreEl.textContent = typingScore;
+    nextTypingWord();
+  }
+});
+
+/* ========== MEMORY FLIP ========== */
+let memoryRunning=false, memoryCards=[], matchedCount=0, attempts=0, firstCard=null, lock=false;
+function startMemory(){
+  memoryRunning=true; matchedCount=0; attempts=0; matchesEl.textContent=matchedCount; attemptsEl.textContent=attempts;
+  const pairs = ['🔬','⚛️','🌋','⚙️','🧬','🔭','💡','🧪']; // 8 pairs -> 16 cards
+  const deck = pairs.concat(pairs).sort(()=>Math.random()-0.5);
+  memoryBoard.innerHTML = '';
+  deck.forEach((symbol, i)=>{
+    const c = document.createElement('div'); c.className='card'; c.dataset.symbol = symbol; c.dataset.index = i; c.textContent = '';
+    c.addEventListener('click', ()=> flipCard(c));
+    memoryBoard.appendChild(c);
+  });
+}
+function flipCard(card){
+  if(lock || !memoryRunning) return;
+  if(card.classList.contains('flipped')) return;
+  card.classList.add('flipped'); card.textContent = card.dataset.symbol;
+  if(!firstCard){ firstCard = card; return; }
+  attempts++; attemptsEl.textContent = attempts;
+  if(firstCard.dataset.symbol === card.dataset.symbol){
+    matchedCount++; matchesEl.textContent = matchedCount; awardBadge('Matched '+ matchedCount);
+    firstCard = null;
+    if(matchedCount === 8){ memoryRunning=false; alert('You matched all cards! Bonus added.'); updateTotalScore(40); }
+  } else {
+    lock = true; setTimeout(()=>{ firstCard.classList.remove('flipped'); firstCard.textContent=''; card.classList.remove('flipped'); card.textContent=''; firstCard = null; lock = false; }, 700);
+  }
+}
+startMemoryBtn.addEventListener('click', ()=> startMemory());
+resetMemoryBtn.addEventListener('click', ()=> startMemory());
+
+/* ========== BADGES helper ========== */
+function awardBadge(name){
+  if(Array.from(document.querySelectorAll('.badge')).some(b=>b.textContent===name)) return;
+  const b = document.createElement('div'); b.className='badge'; b.textContent = name; topBadges.appendChild(b); badgesList.appendChild(b.cloneNode(true));
+}
+
+/* ========== Save/Load leaderboard references already defined above ========== */
+/* Hook save button already wired earlier but ensure references */
+document.getElementById('saveScore').addEventListener('click', saveScoreToLocal);
+document.getElementById('clearBoard').addEventListener('click', clearLeaderboard);
+
+/* safety: catch errors in console */
+window.addEventListener('error', (e)=> console.error('Runtime error:', e.message));
+</script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+
+
+<span id="PING_IFRAME_FORM_DETECTION" style="display: none;"></span></body></html>
